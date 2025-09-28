@@ -73,6 +73,11 @@ enum Placement {
 	RANDOM
 };
 
+enum Difficulty {
+    CASUAL,
+    HARD
+};
+
 void SetColor(int text, int background) {
     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hStdOut, (WORD)((background << 4) | text));
@@ -136,12 +141,12 @@ int ShowMenus(string* list, const int size, int color) {
             switch (key) {
             case DOWN: {
                 choice++;
-                if (choice == 4) choice = 0;
+                if (choice == size) choice = 0;
                 break;
             }
             case UP: {
                 choice--;
-                if (choice == -1) choice = 3;
+                if (choice == -1) choice = size-1;
                 break;
             }
             }
@@ -480,10 +485,10 @@ void PlayersTurn(int key, int& cursorX, int& cursorY,int computerMap[ROWS][COLS]
             }
             else {
                 computerVisibleMap[cursorY][cursorX] = M;
+                playerTurn = false;
             }
             SetCursorPosition(cursorX, cursorY);
             cout << "  ";
-            playerTurn = false;
         }
         Sleep(500);
     }
@@ -529,14 +534,32 @@ int SelectDifficulty(int color) {
     return choice;
 }
 
+int GetRandomNum(int min, int max) {
+    int num = min + rand() % (max - min + 1);
+    return num;
+}
+
+void ComputersTurn(const int difficulty, int playerMap[ROWS][COLS], bool& playersTurn) {
+    switch (difficulty) {
+    case CASUAL: {
+        int x = GetRandomNum(0, COLS-1);
+        int y = GetRandomNum(0, ROWS-1);
+        if (playerMap[x][y] == S) playerMap[x][y] = H;
+        else if (playerMap[x][y] == E) { playerMap[x][y] = M; playersTurn = true; }
+        Sleep(500);
+    }
+    }
+}
+
 int main()
-{
+{   
+    srand(time(0));
     ShowConsoleCursor(false);
     int theme = CYAN;
     ShowGameName(theme);
     string menu[MAIN_MENU_ITEMS] = { "New Game", "Load Game", "Options", "Exit" };
     string modes[GAME_MODE_ITEMS] = { "Player vs Computer", "Computer vs Computer", "Back to main menu" };
-    string difficutlies[GAME_DIFFICULTY] = { "CASUAL", "HARD",};
+    string difficulties[GAME_DIFFICULTY] = { "CASUAL", "HARD",};
     while (true) {
         int menuChoice = ShowMenus(menu, MAIN_MENU_ITEMS, theme);
         switch (menuChoice) {
@@ -565,6 +588,7 @@ int main()
                                                       {E,E,E,E,E,E,E,E,E,E},
                                                       {E,E,E,E,E,E,E,E,E,E}, };
                 int computerMap[ROWS][COLS];
+                int difficulty = ShowMenus(difficulties, GAME_DIFFICULTY, theme);
                 int placement = ShipPlacesOption(theme);
                 switch (placement) {
                 case MANUAL: {
@@ -581,10 +605,13 @@ int main()
 
                 while (true) {
                     ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true, playerTurn);
-                    int key = _getch();
-                    if (playerTurn) PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn);
-
-                    if (key == ESC) break;
+                    if (playerTurn) {
+                        int key = _getch();
+                        PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn); 
+                        if (key == ESC) break;
+                    }
+                    else ComputersTurn(difficulty, playerMap, playerTurn);
+                    
                 }
                 break; }
             case COMPUTER_VS_COMPUTER: { 
