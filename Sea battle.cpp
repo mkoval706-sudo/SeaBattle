@@ -21,6 +21,7 @@ const int ROWS = 10, COLS = 10;
 const int MAX_SHIPS = 10;
 const int MAIN_MENU_ITEMS = 4;
 const int GAME_MODE_ITEMS = 3;
+const int GAME_DIFFICULTY = 2;
 const int SHIPS_VARIETIES = 4;
 const int PLACEMENT_OPTIONS = 2;
 const int COLOR_OPTIONS = 8;
@@ -114,75 +115,33 @@ void ShowGameName(int color) {
 	system("cls");
 } 
 
-int ShowMenu(int color) {
-    
+int ShowMenus(string* list, const int size, int color) {
     SetColor(color, BLACK);
-    string menu[MAIN_MENU_ITEMS] = { "New Game", "Load Game", "Options", "Exit" };
     int choice = 0;
     while (true) {
         SetCursorPosition(0, 0);
-        for (int i = 0; i < MAIN_MENU_ITEMS; i++) {
+        for (int i = 0; i < size; i++) {
             if (i == choice) {
                 SetColor(BLACK, color);
-                cout << menu[i] << endl;
+                cout << list[i] << endl;
                 SetColor(color, BLACK);
             }
             else {
-                cout << menu[i] << endl;
+                cout << list[i] << endl;
             }
         }
         int key = _getch();
         if (key == ARROW_PREFIX) {
             key = _getch();
             switch (key) {
-            case DOWN: { 
+            case DOWN: {
                 choice++;
                 if (choice == 4) choice = 0;
                 break;
             }
-            case UP: { 
-                choice--;
-                if (choice == -1) choice = 3;
-                break;
-            }
-			}
-		}
-        else if (key == 13) { 
-			system("cls");
-            break;
-        }
-    }
-    return choice;
-}
-
-int SelectGameMode(int color) {
-    SetColor(color, BLACK);
-    string modes[GAME_MODE_ITEMS] = { "Player vs Computer", "Computer vs Computer", "Back to main menu" };
-    int choice = 0;
-    while (true) {
-        SetCursorPosition(0, 0);
-        for (int i = 0; i < GAME_MODE_ITEMS; i++) {
-            if (i == choice) {
-                SetColor(BLACK, color);
-                cout << modes[i] << endl;
-                SetColor(color, BLACK);
-            }
-            else {
-                cout << modes[i] << endl;
-            }
-        }
-        int key = _getch();
-        if (key == ARROW_PREFIX) {
-            key = _getch();
-            switch (key) {
-            case DOWN: { 
-                choice++;
-                if (choice == 3) choice = 0;
-                break;
-            }
             case UP: {
                 choice--;
-                if (choice == -1) choice = 2;
+                if (choice == -1) choice = 3;
                 break;
             }
             }
@@ -192,7 +151,7 @@ int SelectGameMode(int color) {
             break;
         }
     }
-	return choice;
+    return choice;
 }
 
 void Options(int& color) {
@@ -276,11 +235,11 @@ void Options(int& color) {
 	Sleep(300);
 }
  
-void ShowMap(int x, int y, int map[ROWS][COLS], int cursorX, int cursorY, bool active) {
+void ShowMap(int x, int y, int map[ROWS][COLS], int cursorX, int cursorY, bool active, bool playerTurn) {
     SetCursorPosition(x, y);
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
-            if (active && cursorX == j && cursorY == i) {
+            if (active && cursorX == j && cursorY == i && playerTurn) {
                 if (map[i][j] == E) {
                     SetColor(BLACK, BLUE);
                 }
@@ -319,16 +278,16 @@ void ShowMap(int x, int y, int map[ROWS][COLS], int cursorX, int cursorY, bool a
     SetColor(WHITE, BLACK);
 }
 
-void ShowMaps(int map1[ROWS][COLS], int map2[ROWS][COLS], int color, int cursorX, int cursorY, bool computerMap) {
+void ShowMaps(int map1[ROWS][COLS], int map2[ROWS][COLS], int color, int cursorX, int cursorY, bool computerMap, bool playerTurn) {
 	system("cls");
     SetColor(color, BLACK);
 	SetCursorPosition(0, 0);
     cout << "      Player 1" << endl;
-    ShowMap(0, 2, map1, cursorX, cursorY, !computerMap);
+    ShowMap(0, 2, map1, cursorX, cursorY, !computerMap, true);
     SetColor(color, BLACK);
     SetCursorPosition(30, 0);
     cout << "      Player 2" << endl;
-    ShowMap(30, 2, map2, cursorX, cursorY, computerMap);
+    ShowMap(30, 2, map2, cursorX, cursorY, computerMap, playerTurn);
 }
 
 void ShowShipsList(int shipsAvailable[SHIPS_VARIETIES], int x, int y) {
@@ -393,7 +352,7 @@ void PlaceShips(int map[ROWS][COLS]) {
     bool horizontal = true;
     while (shipsAvailable[0] + shipsAvailable[1] + shipsAvailable[2] + shipsAvailable[3] > 0) {
         system("cls");
-        ShowMap(0, 0, map, 0, 0, false);
+        ShowMap(0, 0, map, 0, 0, false, false);
         ShowShipsList(shipsAvailable, 25, 0);
         SetCursorPosition(25, 6);
         SetColor(WHITE, BLACK);
@@ -522,10 +481,52 @@ void PlayersTurn(int key, int& cursorX, int& cursorY,int computerMap[ROWS][COLS]
             else {
                 computerVisibleMap[cursorY][cursorX] = M;
             }
+            SetCursorPosition(cursorX, cursorY);
+            cout << "  ";
             playerTurn = false;
         }
         Sleep(500);
     }
+}
+
+int SelectDifficulty(int color) {
+    SetColor(color, BLACK);
+    string modes[GAME_MODE_ITEMS] = { "Player vs Computer", "Computer vs Computer", "Back to main menu" };
+    int choice = 0;
+    while (true) {
+        SetCursorPosition(0, 0);
+        for (int i = 0; i < GAME_MODE_ITEMS; i++) {
+            if (i == choice) {
+                SetColor(BLACK, color);
+                cout << modes[i] << endl;
+                SetColor(color, BLACK);
+            }
+            else {
+                cout << modes[i] << endl;
+            }
+        }
+        int key = _getch();
+        if (key == ARROW_PREFIX) {
+            key = _getch();
+            switch (key) {
+            case DOWN: {
+                choice++;
+                if (choice == 3) choice = 0;
+                break;
+            }
+            case UP: {
+                choice--;
+                if (choice == -1) choice = 2;
+                break;
+            }
+            }
+        }
+        else if (key == 13) {
+            system("cls");
+            break;
+        }
+    }
+    return choice;
 }
 
 int main()
@@ -533,11 +534,14 @@ int main()
     ShowConsoleCursor(false);
     int theme = CYAN;
     ShowGameName(theme);
+    string menu[MAIN_MENU_ITEMS] = { "New Game", "Load Game", "Options", "Exit" };
+    string modes[GAME_MODE_ITEMS] = { "Player vs Computer", "Computer vs Computer", "Back to main menu" };
+    string difficutlies[GAME_DIFFICULTY] = { "CASUAL", "HARD",};
     while (true) {
-        int menuChoice = ShowMenu(theme);
+        int menuChoice = ShowMenus(menu, MAIN_MENU_ITEMS, theme);
         switch (menuChoice) {
         case NEW_GAME: {
-            int mode = SelectGameMode(theme);
+            int mode = ShowMenus(modes, GAME_MODE_ITEMS, theme);
             switch (mode) {
             case PLAYER_VS_COMPUTER: {
                 int playerMap[ROWS][COLS] = { {E,E,E,E,E,E,E,E,E,E},
@@ -576,9 +580,10 @@ int main()
                 int cursorX = 0, cursorY = 0;
 
                 while (true) {
-                    ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true);
+                    ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true, playerTurn);
                     int key = _getch();
                     if (playerTurn) PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn);
+
                     if (key == ESC) break;
                 }
                 break; }
@@ -596,7 +601,7 @@ int main()
                 }
                 }
                 RandomMap(computer2Map);
-                ShowMaps(computer1Map, computer2Map, theme, 0, 0, false);
+                ShowMaps(computer1Map, computer2Map, theme, 0, 0, false, false);
                 return 0;
                 break; }
 			case BACK_TO_MAIN_MENU: continue;
