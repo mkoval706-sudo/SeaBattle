@@ -1,6 +1,5 @@
 ﻿#include <iostream>
 #include <cstring>
-#include <chrono>
 #include <ctime>
 #include "windows.h"
 #include "conio.h"
@@ -505,6 +504,30 @@ int ShipPlacesOption(int color) {
     return choice;
 }
 
+void PlayersTurn(int key, int& cursorX, int& cursorY,int computerMap[ROWS][COLS], int computerVisibleMap[ROWS][COLS], bool& playerTurn) {
+    
+    if (key == ARROW_PREFIX) {
+        key = _getch();
+        if (key == UP && cursorY > 0) cursorY--;
+        else if (key == DOWN && cursorY < ROWS - 1) cursorY++;
+        else if (key == LEFT && cursorX > 0) cursorX--;
+        else if (key == RIGHT && cursorX < COLS - 1) cursorX++;
+    }
+    
+    else if (key == ENTER) {
+        if (computerVisibleMap[cursorY][cursorX] == E) {
+            if (computerMap[cursorY][cursorX] == S) {
+                computerVisibleMap[cursorY][cursorX] = H;
+            }
+            else {
+                computerVisibleMap[cursorY][cursorX] = M;
+            }
+            playerTurn = false;
+        }
+        Sleep(500);
+    }
+}
+
 int main()
 {
     ShowConsoleCursor(false);
@@ -514,9 +537,9 @@ int main()
         int menuChoice = ShowMenu(theme);
         switch (menuChoice) {
         case NEW_GAME: {
-			int mode = SelectGameMode(theme);
+            int mode = SelectGameMode(theme);
             switch (mode) {
-            case PLAYER_VS_COMPUTER: { 
+            case PLAYER_VS_COMPUTER: {
                 int playerMap[ROWS][COLS] = { {E,E,E,E,E,E,E,E,E,E},
                                               {E,E,E,E,E,E,E,E,E,E},
                                               {E,E,E,E,E,E,E,E,E,E},
@@ -527,57 +550,36 @@ int main()
                                               {E,E,E,E,E,E,E,E,E,E},
                                               {E,E,E,E,E,E,E,E,E,E},
                                               {E,E,E,E,E,E,E,E,E,E}, };
-                int computerVisibleMap[ROWS][COLS] = {{E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E}, 
-                                                      {E,E,E,E,E,E,E,E,E,E},};
-				int computerMap[ROWS][COLS];
-				int placement = ShipPlacesOption(theme);
+                int computerVisibleMap[ROWS][COLS] = { {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E},
+                                                      {E,E,E,E,E,E,E,E,E,E}, };
+                int computerMap[ROWS][COLS];
+                int placement = ShipPlacesOption(theme);
                 switch (placement) {
                 case MANUAL: {
-                    PlaceShips(playerMap); break;}
+                    PlaceShips(playerMap); break;
+                }
 
-				case RANDOM: {
-					RandomMap(playerMap); break;}
-				}
+                case RANDOM: {
+                    RandomMap(playerMap); break;
+                }
+                }
                 RandomMap(computerMap);
                 bool playerTurn = true;
                 int cursorX = 0, cursorY = 0;
 
                 while (true) {
-                    ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true); 
-
+                    ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true);
                     int key = _getch();
-                    if (key == ARROW_PREFIX) {
-                        key = _getch();
-                        if (key == UP && cursorY > 0) cursorY--;
-                        else if (key == DOWN && cursorY < ROWS - 1) cursorY++;
-                        else if (key == LEFT && cursorX > 0) cursorX--;
-                        else if (key == RIGHT && cursorX < COLS - 1) cursorX++;
-                    }
-                    else if (key == ESC) { 
-                        break;
-                    }
-                    else if (key == ENTER) { 
-                        if (computerVisibleMap[cursorY][cursorX] == E) {
-                            if (computerMap[cursorY][cursorX] == S) {
-                                computerVisibleMap[cursorY][cursorX] = H;
-                            }
-                            else {
-                                computerVisibleMap[cursorY][cursorX] = M;
-                            }
-                            playerTurn = false;
-                        }
-                        chrono::milliseconds(500);
-                    }
-
-                    
+                    if (playerTurn) PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn);
+                    if (key == ESC) break;
                 }
                 break; }
             case COMPUTER_VS_COMPUTER: { 
