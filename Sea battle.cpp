@@ -124,7 +124,7 @@ int ShowMenus(string* list, const int size, int color) {
     SetColor(color, BLACK);
     int choice = 0;
     while (true) {
-        SetCursorPosition(0, 0);
+        SetCursorPosition(0, 1);
         for (int i = 0; i < size; i++) {
             if (i == choice) {
                 SetColor(BLACK, color);
@@ -468,8 +468,56 @@ int ShipPlacesOption(int color) {
     return choice;
 }
 
-void PlayersTurn(int key, int& cursorX, int& cursorY,int computerMap[ROWS][COLS], int computerVisibleMap[ROWS][COLS], bool& playerTurn) {
-    
+bool IsShipSunk(int map[ROWS][COLS], int row, int col, bool visited[ROWS][COLS]) {
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS || visited[row][col])
+        return true;
+    if (map[row][col] == S) {
+        return false;
+    }
+    if (map[row][col] != H) {
+        return true;
+    }
+    visited[row][col] = true;
+    bool sunk = true;
+    sunk &= IsShipSunk(map, row - 1, col, visited); 
+    sunk &= IsShipSunk(map, row + 1, col, visited); 
+    sunk &= IsShipSunk(map, row, col - 1, visited); 
+    sunk &= IsShipSunk(map, row, col + 1, visited); 
+    return sunk;
+}
+
+void MarkPerimeterAsMisses(int map[ROWS][COLS], int row, int col) {
+    int dR[] = { -1, -1, -1, 0, 0, 1, 1, 1 }; 
+    int dC[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+    for (int i = 0; i < 8; ++i) {
+        int nR = row + dR[i];
+        int nC = col + dC[i];
+
+        if (nR >= 0 && nR < ROWS && nC >= 0 && nC < COLS) {
+            if (map[nR][nC] == E) {
+                map[nR][nC] = M;
+            }
+        }
+    }
+}
+
+void SinkShip(int map[ROWS][COLS], int row, int col, bool visited[ROWS][COLS]) {
+    if (row < 0 || row >= ROWS || col < 0 || col >= COLS || visited[row][col] || map[row][col] != H)
+        return;
+    MarkPerimeterAsMisses(map, row, col);
+    visited[row][col] = true;
+    SinkShip(map, row - 1, col, visited);
+    SinkShip(map, row + 1, col, visited);
+    SinkShip(map, row, col - 1, visited);
+    SinkShip(map, row, col + 1, visited);
+}
+
+void PlayersTurn(int key, int& cursorX, int& cursorY,
+    int computerMap[ROWS][COLS],
+    int computerVisibleMap[ROWS][COLS],
+    bool& playerTurn, int& shipsCount)
+{
     if (key == ARROW_PREFIX) {
         key = _getch();
         if (key == UP && cursorY > 0) cursorY--;
@@ -477,17 +525,31 @@ void PlayersTurn(int key, int& cursorX, int& cursorY,int computerMap[ROWS][COLS]
         else if (key == LEFT && cursorX > 0) cursorX--;
         else if (key == RIGHT && cursorX < COLS - 1) cursorX++;
     }
-    
     else if (key == ENTER) {
-        if (computerVisibleMap[cursorY][cursorX] == E) {
-            if (computerMap[cursorY][cursorX] == S) {
-                computerVisibleMap[cursorY][cursorX] = H;
+        int y = cursorY;
+        int x = cursorX;
+        if (computerVisibleMap[y][x] == E) {
+            if (computerMap[y][x] == S) {
+                computerMap[y][x] = H; 
+                computerVisibleMap[y][x] = H;
+                bool visited[ROWS][COLS] = { false };
+                if (IsShipSunk(computerMap, y, x, visited)) {
+                    shipsCount--;
+                    bool visited_sink[ROWS][COLS] = { false };
+                    SinkShip(computerVisibleMap, y, x, visited_sink);
+
+                    playerTurn = true; 
+                }
+                else {
+                    playerTurn = true; 
+                }
             }
             else {
-                computerVisibleMap[cursorY][cursorX] = M;
-                playerTurn = false;
+                computerVisibleMap[y][x] = M; 
+                playerTurn = false; 
             }
             SetCursorPosition(cursorX, cursorY);
+            SetCursorPosition(x, y);
             cout << "  ";
         }
         Sleep(500);
@@ -539,16 +601,39 @@ int GetRandomNum(int min, int max) {
     return num;
 }
 
-void ComputersTurn(const int difficulty, int playerMap[ROWS][COLS], bool& playersTurn) {
+void ComputersTurn(const int difficulty,
+    int playerMap[ROWS][COLS],
+    bool& playersTurn,
+    int& shipsCount) {
+    int x = 0, y = 0;
+    do {
+        x = GetRandomNum(0, COLS - 1);
+        y = GetRandomNum(0, ROWS - 1);
+    } while (playerMap[y][x] == H || playerMap[y][x] == M);
+
     switch (difficulty) {
     case CASUAL: {
-        int x = GetRandomNum(0, COLS-1);
-        int y = GetRandomNum(0, ROWS-1);
-        if (playerMap[x][y] == S) playerMap[x][y] = H;
-        else if (playerMap[x][y] == E) { playerMap[x][y] = M; playersTurn = true; }
-        Sleep(500);
+        if (playerMap[y][x] == S) {
+            playerMap[y][x] = H;
+            bool visited[ROWS][COLS] = { false };
+            if (IsShipSunk(playerMap, y, x, visited)) {
+                shipsCount--;
+                bool visited_sink[ROWS][COLS] = { false };
+                SinkShip(playerMap, y, x, visited_sink);
+                playersTurn = false;
+            }
+            else {
+                playersTurn = false; 
+            }
+        }
+        else if (playerMap[y][x] == E) {
+            playerMap[y][x] = M; 
+            playersTurn = true; 
+        }
+        break;
     }
     }
+    Sleep(500);
 }
 
 int main()
@@ -588,6 +673,8 @@ int main()
                                                       {E,E,E,E,E,E,E,E,E,E},
                                                       {E,E,E,E,E,E,E,E,E,E}, };
                 int computerMap[ROWS][COLS];
+                SetColor(theme, BLACK);
+                cout << "Choose game dufficulty:" << endl;
                 int difficulty = ShowMenus(difficulties, GAME_DIFFICULTY, theme);
                 int placement = ShipPlacesOption(theme);
                 switch (placement) {
@@ -602,15 +689,18 @@ int main()
                 RandomMap(computerMap);
                 bool playerTurn = true;
                 int cursorX = 0, cursorY = 0;
-
+                int playerShips = 10, computerShips = 10;
                 while (true) {
                     ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true, playerTurn);
+                    SetColor(theme, BLACK);
+                    cout << "\nYour ships remain - " << playerShips << "\tOponent ships remain - " << computerShips << endl;
+                    cout << "ARROWS - MOVEMENT ON MAP, ENTER - SHOOT";
                     if (playerTurn) {
                         int key = _getch();
-                        PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn); 
+                        PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn, computerShips); 
                         if (key == ESC) break;
                     }
-                    else ComputersTurn(difficulty, playerMap, playerTurn);
+                    else ComputersTurn(difficulty, playerMap, playerTurn, playerShips);
                     
                 }
                 break; }
