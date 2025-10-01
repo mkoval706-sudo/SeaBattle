@@ -12,8 +12,11 @@ using namespace std;
 #define RIGHT 77
 #define ESC 27
 #define ENTER 13
+#define SPACE 32
 #define R_key 82
 #define r_key 114
+#define D_key 68
+#define d_key 100
 #define MAP_X 30
 #define MAP_Y 2
 
@@ -357,6 +360,40 @@ void PlaceShip(int map[ROWS][COLS], int x, int y, int size, bool horizontal) {
     }
 }
 
+void DeleteShip(int map[ROWS][COLS], int x, int y, int shipsAvailable[SHIPS_VARIETIES]) {
+    if (map[y][x] != S) return;
+    bool horizontal = false;
+    if (x + 1 < COLS && map[y][x + 1] == S) horizontal = true;
+    else if (x - 1 >= 0 && map[y][x - 1] == S) horizontal = true;
+    int startX = x, startY = y;
+    if (horizontal) {
+        while (startX > 0 && map[y][startX - 1] == S) startX--;
+    }
+    else {
+        while (startY > 0 && map[startY - 1][x] == S) startY--;
+    }
+    int length = 0;
+    if (horizontal) {
+        int cx = startX;
+        while (cx < COLS && map[y][cx] == S) {
+            map[y][cx] = E;
+            length++;
+            cx++;
+        }
+    }
+    else {
+        int cy = startY;
+        while (cy < ROWS && map[cy][x] == S) {
+            map[cy][x] = E;
+            length++;
+            cy++;
+        }
+    }
+    if (length >= 1 && length <= 4) {
+        shipsAvailable[length - 1]++;
+    }
+}
+
 void PlaceShips(int map[ROWS][COLS]) {
     int shipsAvailable[SHIPS_VARIETIES] = { 4, 3, 2, 1 };
     int cursorX = 0, cursorY = 0;
@@ -374,7 +411,13 @@ void PlaceShips(int map[ROWS][COLS]) {
         SetColor(WHITE, BLACK);
         cout << "Current ship: " << shipSize << "-cell" << (horizontal ? " (H)" : " (V)");
         SetCursorPosition(25, 7);
+        cout << "Press numbers from 1 to 4 to choose size of the ship";
+        SetCursorPosition(25, 8);
+        cout << "Press ENTER to place your ship";
+        SetCursorPosition(25, 9);
 		cout << "Press 'R' to rotate your ship";
+        SetCursorPosition(25, 10);
+        cout << "Press 'D' to delete ship";
         SetCursorPosition(cursorX * 2, cursorY);
         SetColor(WHITE, BLACK);
         cout << "[]";
@@ -390,6 +433,11 @@ void PlaceShips(int map[ROWS][COLS]) {
         else if (key == r_key || key == R_key) {
             horizontal = !horizontal;
         }
+
+        else if ((key == D_key || key == d_key) && map[cursorY][cursorX] == S) {
+            DeleteShip(map, cursorX, cursorY, shipsAvailable);
+        }
+
         else if (key == ENTER) {
             if (shipSize >= 1 && shipsAvailable[shipSize - 1] > 0 &&
                 CanPlaceShip(map, cursorX, cursorY, shipSize, horizontal)) {
