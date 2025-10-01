@@ -691,6 +691,52 @@ void ComputersTurn(const int difficulty,
         }
         break;
     }
+    case HARD: {
+        bool foundTarget = false;
+        if (!foundTarget) {
+            do {
+                x = GetRandomNum(0, COLS - 1);
+                y = GetRandomNum(0, ROWS - 1);
+            } while (playerMap[y][x] == H || playerMap[y][x] == M);
+        }
+        for (int i = 0; i < ROWS && !foundTarget; i++) {
+            for (int j = 0; j < COLS && !foundTarget; j++) {
+                if (playerMap[i][j] == H) {
+                    int dx[4] = { 1, -1, 0, 0 };
+                    int dy[4] = { 0, 0, 1, -1 };
+
+                    for (int d = 0; d < 4; d++) {
+                        int ny = i + dy[d];
+                        int nx = j + dx[d];
+                        if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+                            if (playerMap[ny][nx] == E || playerMap[ny][nx] == S) {
+                                x = nx;
+                                y = ny;
+                                foundTarget = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (playerMap[y][x] == S) {
+            playerMap[y][x] = H;
+            bool visited[ROWS][COLS] = { false };
+            if (IsShipSunk(playerMap, y, x, visited)) {
+                shipsCount--;
+                bool visited_sink[ROWS][COLS] = { false };
+                SinkShip(playerMap, y, x, visited_sink);
+            }
+            playersTurn = false;
+        }
+        else if (playerMap[y][x] == E) {
+            playerMap[y][x] = M;
+            playersTurn = true;
+        }
+        break;
+    }
+
     }
     Sleep(500);
 }
