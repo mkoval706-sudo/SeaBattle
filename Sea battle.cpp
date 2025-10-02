@@ -25,6 +25,7 @@ const int MAX_SHIPS = 10;
 const int MAIN_MENU_ITEMS = 4;
 const int GAME_MODE_ITEMS = 3;
 const int FINAL_MENU_ITEMS = 3;
+const int ESC_MENU_ITEMS = 3;
 const int GAME_DIFFICULTY = 2;
 const int SHIPS_VARIETIES = 4;
 const int PLACEMENT_OPTIONS = 2;
@@ -64,11 +65,10 @@ enum Menu {
 	LOAD_GAME,
 	OPTIONS,
 	EXIT,
-};
-
-enum Final_Menu {
     BACK = 1,
-    CLOSE,
+    CLOSE_GAME = 2,
+    SAVE_QUIT = 1,
+    RESUME = 2
 };
 
 enum GameMode {
@@ -165,7 +165,7 @@ int ShowMenus(string* list, const int size, int color) {
             }
             }
         }
-        else if (key == 13) {
+        else if (key == ENTER) {
             system("cls");
             break;
         }
@@ -741,13 +741,39 @@ void ComputersTurn(const int difficulty,
     Sleep(500);
 }
 
-int ShowFinalMenu(int loser, int color, string* menu, const int size) {
+int ShowMainMenu(int color) {
+    string menu[MAIN_MENU_ITEMS] = { "New Game", "Load Game", "Options", "Exit" };
+    int choice = ShowMenus(menu, MAIN_MENU_ITEMS, color);
+    return choice;
+}
+
+int ShowGameModes(int color) {
+    string modes[GAME_MODE_ITEMS] = { "Player vs Computer", "Computer vs Computer", "Back to main menu" };
+    int choice = ShowMenus(modes, GAME_MODE_ITEMS, color);
+    return choice;
+}
+
+int ShowEscMenu(int color) {
+    system("cls");
+    string options[ESC_MENU_ITEMS] = { "Start new game", "Save and quit", "Resume game" };
+    int choice = ShowMenus(options, ESC_MENU_ITEMS, color);
+    return choice;
+}
+
+int ShowDifficulties(int color) {
+    string difficulties[GAME_DIFFICULTY] = { "CASUAL", "HARD"};
+    int choice = ShowMenus(difficulties, GAME_DIFFICULTY, color);
+    return choice;
+}
+
+int ShowFinalMenu(int loser, int color) {
     SetColor(color, BLACK);
     system("cls");
     loser == WINNER ? cout << "CONGRATULATIONS!\n" << "    YOU WIN!" : cout << "  LOSER  \n" << "YOU LOSE!";
     Sleep(2000);
     system("cls");
-    int choice = ShowMenus(menu, size, color);
+    string finalMenu[FINAL_MENU_ITEMS] = { "New Game","Back to title screen", "Close the game" };
+    int choice = ShowMenus(finalMenu, FINAL_MENU_ITEMS, color);
     return choice;
 }
 
@@ -757,16 +783,12 @@ int main()
     ShowConsoleCursor(false);
     int theme = CYAN;
     ShowGameName(theme);
-    string menu[MAIN_MENU_ITEMS] = { "New Game", "Load Game", "Options", "Exit" };
-    string modes[GAME_MODE_ITEMS] = { "Player vs Computer", "Computer vs Computer", "Back to main menu" };
-    string finalMenu[FINAL_MENU_ITEMS] = { "New Game","Back to title screen", "Close the game" };
-    string difficulties[GAME_DIFFICULTY] = { "CASUAL", "HARD",};
     while (true) {
-        int menuChoice = ShowMenus(menu, MAIN_MENU_ITEMS, theme);
+        int menuChoice = ShowMainMenu(theme);
         switch (menuChoice) {
         case NEW_GAME: {
             START_NEW_GAME:
-            int mode = ShowMenus(modes, GAME_MODE_ITEMS, theme);
+            int mode = ShowGameModes(theme);
             switch (mode) {
             case PLAYER_VS_COMPUTER: {
                 int playerMap[ROWS][COLS] = { {E,E,E,E,E,E,E,E,E,E},
@@ -792,7 +814,7 @@ int main()
                 int computerMap[ROWS][COLS];
                 SetColor(theme, BLACK);
                 cout << "Choose game dufficulty:" << endl;
-                int difficulty = ShowMenus(difficulties, GAME_DIFFICULTY, theme);
+                int difficulty = ShowDifficulties(theme);
                 int placement = ShipPlacesOption(theme);
                 switch (placement) {
                 case MANUAL: {
@@ -809,6 +831,7 @@ int main()
                 int playerShips = 10, computerShips = 10;
                 int status = 0;
                 while (true) {  
+                    RESUME_GAME:
                     ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true, playerTurn);
                     SetColor(theme, BLACK);
                     cout << "\nYour ships remain - " << playerShips << "\tOponent ships remain - " << computerShips << endl;
@@ -816,7 +839,14 @@ int main()
                     if (playerTurn) {
                         int key = _getch();
                         PlayersTurn(key, cursorX, cursorY, computerMap, computerVisibleMap, playerTurn, computerShips); 
-                        if (key == ESC) { system("cls"); break; }
+                        if (key == ESC) { 
+                            int escMenu = ShowEscMenu(theme);
+                            switch (escMenu) {
+                            case NEW_GAME: { goto START_NEW_GAME; break; }
+                            case SAVE_QUIT:  { break; }
+                            case RESUME: { goto RESUME_GAME; break; }
+                            }
+                            break; }
                     }
                     else ComputersTurn(difficulty, playerMap, playerTurn, playerShips);
                     if (playerShips == 0) {
@@ -827,11 +857,11 @@ int main()
                     }
                 }
                 if (status != 0) {
-                    int finalMenuChoice = ShowFinalMenu(status, theme, finalMenu, FINAL_MENU_ITEMS);
+                    int finalMenuChoice = ShowFinalMenu(status, theme);
                     switch (finalMenuChoice) {
                     case NEW_GAME: goto START_NEW_GAME;
                     case BACK: break;
-                    case CLOSE: return 1;
+                    case CLOSE_GAME: return 1;
                     }
                 }
 
