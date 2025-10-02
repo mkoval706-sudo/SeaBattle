@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <fstream>
 #include <cstring>
 #include <ctime>
 #include "windows.h"
@@ -20,6 +21,7 @@ using namespace std;
 #define MAP_X 30
 #define MAP_Y 2
 
+const int defaultColor = 11; //CYAN 
 const int ROWS = 10, COLS = 10;
 const int MAX_SHIPS = 10;
 const int MAIN_MENU_ITEMS = 4;
@@ -33,6 +35,9 @@ const int COLOR_OPTIONS = 8;
 const int DOTS_COUNT = 3;
 const int DOTS_DELAY_MS = 400;
 const int CLEAR_DELAY_MS = 300;
+
+const string fileName = "SavedFiles.txt";
+const string fileWithTheme = "SavedTheme.txt";
 
 enum Colors {
     BLACK = 0,
@@ -173,6 +178,28 @@ int ShowMenus(string* list, const int size, int color) {
     return choice;
 }
 
+bool SaveTheme(int color) {
+    ofstream saved(fileWithTheme);
+    if (!saved.is_open()) return false;
+    saved << color;
+    saved.close();
+    return true;
+}
+
+int LoadColorFromFile(int defaultColor) {
+    ifstream saved(fileWithTheme);
+    if (!saved.is_open()) {
+        return defaultColor;
+    }
+    int color = defaultColor;
+    int value;
+    while (saved >> value) {
+        color = value;
+    }
+    saved.close();
+    return color;
+}
+
 void Options(int& color) {
     SetColor(color, BLACK);
     cout << "Options menu" << endl;
@@ -218,35 +245,43 @@ void Options(int& color) {
     switch (choice) {
     case 0: {
         color = WHITE;
+        SaveTheme(WHITE);
         break;
     }
     case 1: {
         color = YELLOW;
+        SaveTheme(YELLOW);
         break;
     }
     case 2: {
         color = MAGENTA;
+        SaveTheme(MAGENTA);
         break;
     }
     case 3: {
         color = RED;
+        SaveTheme(RED);
         break;
     }
 
     case 4: {
         color = CYAN;
+        SaveTheme(CYAN);
         break;
     }
     case 5: {
         color = GREEN;
+        SaveTheme(GREEN);
         break;
     }
     case 6: {
         color = BLUE;
+        SaveTheme(BLUE);
         break;
     }
     case 7: {
         color = GREY;
+        SaveTheme(GREY);
         break;
     }
     }
@@ -777,45 +812,98 @@ int ShowFinalMenu(int loser, int color) {
     return choice;
 }
 
+bool SaveGameToFile(int matr1[ROWS][COLS], int matr2[ROWS][COLS],
+    int visibleMatr[ROWS][COLS], int difficulty, int countShips1, int countShips2) {
+    ofstream saved(fileName);
+    if (!saved.is_open()) return false;
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            saved << matr1[i][j] << " ";
+        }
+        saved << endl;
+    }
+    saved << endl;
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            saved << matr2[i][j] << " ";
+        }
+        saved << endl;
+    }
+    saved << endl;
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            saved << visibleMatr[i][j] << " ";
+        }
+        saved << endl;
+    }
+    saved << difficulty<<endl;
+    saved << countShips1<<endl;
+    saved << countShips2;
+    saved.close();
+    return true;
+}
+
+bool LoadMapsFromFile(int matr1[ROWS][COLS], int matr2[ROWS][COLS],
+    int visibleMatr[ROWS][COLS], int color, int& mode, int& difficulty,
+    int& countShips1, int& countShips2) {
+    ifstream saved(fileName);
+    if (!saved.is_open()) {
+        SetColor(color, BLACK);
+        cout << "No saved game available." << endl;
+        return false;
+    }
+    for (int i = 0; i < ROWS; i++)
+        for (int j = 0; j < COLS; j++)
+            saved >> matr1[i][j];
+    for (int i = 0; i < ROWS; i++)
+        for (int j = 0; j < COLS; j++)
+            saved >> matr2[i][j];
+    mode = PLAYER_VS_COMPUTER;
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            if (!(saved >> visibleMatr[i][j])) {
+                mode = COMPUTER_VS_COMPUTER;
+                break;
+            }
+        }
+    }
+    saved >> difficulty;
+    saved >> countShips1;
+    saved >> countShips2;
+    saved.close();
+    return true;
+}
+
 int main()
 {   
     srand(time(0));
     ShowConsoleCursor(false);
-    int theme = CYAN;
+    int theme = LoadColorFromFile(defaultColor);
     ShowGameName(theme);
     while (true) {
         int menuChoice = ShowMainMenu(theme);
+        int mode;
+        int playerMap[ROWS][COLS], computerMap[ROWS][COLS], computerVisibleMap[ROWS][COLS];
+        int difficulty;
+        int placement;
+        int playerShips = 10, computerShips = 10;
         switch (menuChoice) {
         case NEW_GAME: {
             START_NEW_GAME:
-            int mode = ShowGameModes(theme);
+            mode = ShowGameModes(theme);
             switch (mode) {
             case PLAYER_VS_COMPUTER: {
-                int playerMap[ROWS][COLS] = { {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E},
-                                              {E,E,E,E,E,E,E,E,E,E}, };
-                int computerVisibleMap[ROWS][COLS] = { {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E},
-                                                      {E,E,E,E,E,E,E,E,E,E}, };
-                int computerMap[ROWS][COLS];
+                for (int i = 0; i < ROWS;++i) {
+                    for (int j = 0; j < COLS; ++j) {
+                        playerMap[i][j] = E;
+                        computerVisibleMap[i][j] = E;
+                    }
+                }
+                computerMap[ROWS][COLS];
                 SetColor(theme, BLACK);
                 cout << "Choose game dufficulty:" << endl;
-                int difficulty = ShowDifficulties(theme);
-                int placement = ShipPlacesOption(theme);
+                difficulty = ShowDifficulties(theme);
+                placement = ShipPlacesOption(theme);
                 switch (placement) {
                 case MANUAL: {
                     PlaceShips(playerMap); break;
@@ -826,9 +914,9 @@ int main()
                 }
                 }
                 RandomMap(computerMap);
+                START_GAME:
                 bool playerTurn = true;
                 int cursorX = 0, cursorY = 0;
-                int playerShips = 10, computerShips = 10;
                 int status = 0;
                 while (true) {  
                     RESUME_GAME:
@@ -843,7 +931,23 @@ int main()
                             int escMenu = ShowEscMenu(theme);
                             switch (escMenu) {
                             case NEW_GAME: { goto START_NEW_GAME; break; }
-                            case SAVE_QUIT:  { break; }
+                            case SAVE_QUIT:  { 
+                                if (SaveGameToFile(playerMap, computerMap, computerVisibleMap, difficulty, playerShips, computerShips) && SaveTheme(theme)) {
+                                    system("cls");
+                                    SetColor(theme, BLACK);
+                                    cout << "GAME WAS SAVED";
+                                    Sleep(1000);
+                                    system("cls");
+                                }
+                                else {
+                                    system("cls");
+                                    SetColor(theme, BLACK);
+                                    cout << "ERROR WHILE OPENING FILE";
+                                    Sleep(1000);
+                                    goto RESUME_GAME;
+                                    system("cls");
+                                }
+                                break; }
                             case RESUME: { goto RESUME_GAME; break; }
                             }
                             break; }
@@ -888,6 +992,14 @@ int main()
             break;
         }
         case LOAD_GAME: {
+            
+            bool fileExist = LoadMapsFromFile(playerMap, computerMap, computerVisibleMap, 
+                theme, mode, difficulty, playerShips, computerShips);
+            if (fileExist) {
+                if (mode == PLAYER_VS_COMPUTER) {
+                    goto START_GAME;
+                }
+            }
             break;
         }
         case OPTIONS: { 
