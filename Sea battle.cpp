@@ -332,12 +332,12 @@ void ShowMap(int x, int y, int map[ROWS][COLS], int cursorX, int cursorY, bool a
     SetColor(WHITE, BLACK);
 }
 
-void ShowMaps(int map1[ROWS][COLS], int map2[ROWS][COLS], int color, int cursorX, int cursorY, bool computerMap, bool playerTurn) {
+void ShowMaps(int map1[ROWS][COLS], int map2[ROWS][COLS], int color, int cursorX, int cursorY,bool playerMap, bool computerMap, bool playerTurn) {
 	system("cls");
     SetColor(color, BLACK);
 	SetCursorPosition(0, 0);
     cout << "      Player 1" << endl;
-    ShowMap(0, 2, map1, cursorX, cursorY, !computerMap, true);
+    ShowMap(0, 2, map1, cursorX, cursorY, playerMap, true);
     SetColor(color, BLACK);
     SetCursorPosition(30, 0);
     cout << "      Player 2" << endl;
@@ -844,7 +844,7 @@ bool SaveGameToFile(int matr1[ROWS][COLS], int matr2[ROWS][COLS],
 }
 
 bool LoadMapsFromFile(int matr1[ROWS][COLS], int matr2[ROWS][COLS],
-    int visibleMatr[ROWS][COLS], int color, int& mode, int& difficulty,
+    int visibleMatr[ROWS][COLS], int color, int& difficulty,
     int& countShips1, int& countShips2) {
     ifstream saved(fileName);
     if (!saved.is_open()) {
@@ -858,13 +858,9 @@ bool LoadMapsFromFile(int matr1[ROWS][COLS], int matr2[ROWS][COLS],
     for (int i = 0; i < ROWS; i++)
         for (int j = 0; j < COLS; j++)
             saved >> matr2[i][j];
-    mode = PLAYER_VS_COMPUTER;
     for (int i = 0; i < ROWS; i++) {
         for (int j = 0; j < COLS; j++) {
-            if (!(saved >> visibleMatr[i][j])) {
-                mode = COMPUTER_VS_COMPUTER;
-                break;
-            }
+            saved >> visibleMatr[i][j];
         }
     }
     saved >> difficulty;
@@ -919,8 +915,8 @@ int main()
                 int cursorX = 0, cursorY = 0;
                 int status = 0;
                 while (true) {  
-                    RESUME_GAME:
-                    ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, true, playerTurn);
+                    RESUME_GAME1:
+                    ShowMaps(playerMap, computerVisibleMap, theme, cursorX, cursorY, false, true, playerTurn);
                     SetColor(theme, BLACK);
                     cout << "\nYour ships remain - " << playerShips << "\tOponent ships remain - " << computerShips << endl;
                     cout << "ARROWS - MOVEMENT ON MAP, ENTER - SHOOT";
@@ -944,11 +940,11 @@ int main()
                                     SetColor(theme, BLACK);
                                     cout << "ERROR WHILE OPENING FILE";
                                     Sleep(1000);
-                                    goto RESUME_GAME;
+                                    goto RESUME_GAME1;
                                     system("cls");
                                 }
                                 break; }
-                            case RESUME: { goto RESUME_GAME; break; }
+                            case RESUME: { goto RESUME_GAME1; break; }
                             }
                             break; }
                     }
@@ -968,12 +964,22 @@ int main()
                     case CLOSE_GAME: return 1;
                     }
                 }
-
                 break; }
             case COMPUTER_VS_COMPUTER: { 
-				int computer1Map[ROWS][COLS];
+                int computer1Map[ROWS][COLS] = { {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E},
+                                                 {E, E, E, E, E, E, E, E, E, E} };
 				int computer2Map[ROWS][COLS];
-                int placement = ShipPlacesOption(theme);
+                cout << "Choose game dufficulty:" << endl;
+                difficulty = ShowDifficulties(theme);
+                placement = ShipPlacesOption(theme);
                 switch (placement) {
                 case MANUAL: {
                     PlaceShips(computer1Map); break;
@@ -984,22 +990,62 @@ int main()
                 }
                 }
                 RandomMap(computer2Map);
-                ShowMaps(computer1Map, computer2Map, theme, 0, 0, false, false);
-                return 0;
-                break; }
+                bool computer1Turn = true;
+                int cursorX = 0, cursorY = 0;
+                int status = 0;
+                while (true) {
+                RESUME_GAME2:
+                    ShowMaps(computer1Map, computer2Map, theme, cursorX, cursorY, false, false, computer1Turn);
+                    SetColor(theme, BLACK);
+                    cout << "\nComputers 1 ships remain - " << playerShips << "\tComputers 2 ships remain - " << computerShips << endl;
+                    cout << "JUST WATCH THE GAME";
+                    if (computer1Turn) {
+                        ComputersTurn(difficulty, computer2Map, computer1Turn, computerShips);
+                        if (_kbhit()) {
+                            int key = _getch();
+                            if (key == ESC) {
+                                int escMenu = ShowEscMenu(theme);
+                                switch (escMenu) {
+                                case NEW_GAME: { goto START_NEW_GAME; break; }
+                                case SAVE_QUIT: {
+                                    system("cls");
+                                    SetColor(theme, BLACK);
+                                    cout << "YOU CAN'T SAVE GAME IN COMPUTER VS COMPUTER MODE";
+                                    Sleep(2000);
+                                    system("cls");
+                                    goto RESUME_GAME2;
+                                }
+                                case RESUME: { goto RESUME_GAME2; break; }
+                                }
+                            }
+                            break;
+                        }
+                        continue;
+                    }
+                    else ComputersTurn(difficulty, computer1Map, computer1Turn, playerShips);
+                    if (playerShips == 0) {
+                        status = LOSER; break;
+                    }
+                    else if (computerShips == 0) {
+                        status = WINNER; break;
+                    }
+                }
+                if (status != 0) {
+                    int finalMenuChoice = ShowFinalMenu(status, theme);
+                    switch (finalMenuChoice) {
+                    case NEW_GAME: goto START_NEW_GAME;
+                    case BACK: break;
+                    case CLOSE_GAME: return 1;
+                    }
+                }}
 			case BACK_TO_MAIN_MENU: continue;
             }
             break;
         }
         case LOAD_GAME: {
-            
-            bool fileExist = LoadMapsFromFile(playerMap, computerMap, computerVisibleMap, 
-                theme, mode, difficulty, playerShips, computerShips);
-            if (fileExist) {
-                if (mode == PLAYER_VS_COMPUTER) {
-                    goto START_GAME;
-                }
-            }
+            bool fileExist = LoadMapsFromFile(playerMap, computerMap, computerVisibleMap,
+                                        theme, difficulty, playerShips, computerShips);
+            if(fileExist) goto START_GAME;
             break;
         }
         case OPTIONS: { 
