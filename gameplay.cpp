@@ -256,42 +256,40 @@ int GetRandomNum(int min, int max) {
 void ComputersTurn(const int difficulty,
     int playerMap[ROWS][COLS],
     bool& playersTurn,
-    int& shipsCount) {
+    int& shipsCount)
+{
     int x = 0, y = 0;
     do {
         x = GetRandomNum(0, COLS - 1);
         y = GetRandomNum(0, ROWS - 1);
     } while (playerMap[y][x] == H || playerMap[y][x] == M);
 
-    switch (difficulty) {
-    case CASUAL: {
-        if (playerMap[y][x] == S) {
+    switch (difficulty)
+    {
+    case CASUAL:
+    {
+        if (playerMap[y][x] == S) 
+        {
             playerMap[y][x] = H;
             bool visited[ROWS][COLS] = { false };
             if (IsShipSunk(playerMap, y, x, visited)) {
                 shipsCount--;
                 bool visited_sink[ROWS][COLS] = { false };
                 SinkShip(playerMap, y, x, visited_sink);
-                playersTurn = false;
             }
-            else {
-                playersTurn = false;
-            }
+            playersTurn = playersTurn;
         }
-        else if (playerMap[y][x] == E) {
+        else if (playerMap[y][x] == E)
+        {
             playerMap[y][x] = M;
-            playersTurn = true;
+            playersTurn = !playersTurn;
         }
         break;
     }
-    case HARD: {
+
+    case HARD:
+    {
         bool foundTarget = false;
-        if (!foundTarget) {
-            do {
-                x = GetRandomNum(0, COLS - 1);
-                y = GetRandomNum(0, ROWS - 1);
-            } while (playerMap[y][x] == H || playerMap[y][x] == M);
-        }
         for (int i = 0; i < ROWS && !foundTarget; i++) {
             for (int j = 0; j < COLS && !foundTarget; j++) {
                 if (playerMap[i][j] == H) {
@@ -313,7 +311,14 @@ void ComputersTurn(const int difficulty,
                 }
             }
         }
-        if (playerMap[y][x] == S) {
+        if (!foundTarget) {
+            do {
+                x = GetRandomNum(0, COLS - 1);
+                y = GetRandomNum(0, ROWS - 1);
+            } while (playerMap[y][x] == H || playerMap[y][x] == M);
+        }
+        if (playerMap[y][x] == S) 
+        {
             playerMap[y][x] = H;
             bool visited[ROWS][COLS] = { false };
             if (IsShipSunk(playerMap, y, x, visited)) {
@@ -321,15 +326,16 @@ void ComputersTurn(const int difficulty,
                 bool visited_sink[ROWS][COLS] = { false };
                 SinkShip(playerMap, y, x, visited_sink);
             }
-            playersTurn = false;
+            playersTurn = playersTurn;
         }
-        else if (playerMap[y][x] == E) {
+        else if (playerMap[y][x] == E) 
+        {
             playerMap[y][x] = M;
-            playersTurn = true;
+            playersTurn = !playersTurn;
         }
         break;
     }
-
     }
-    Sleep(500);
+
+    Sleep(2000);
 }

@@ -153,7 +153,6 @@ int main()
                             }
                             break;
                         }
-                        continue;
                     }
                     else ComputersTurn(difficulty, computer1Map, computer1Turn, playerShips);
                     if (playerShips == 0) {
