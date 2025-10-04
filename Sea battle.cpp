@@ -19,6 +19,7 @@ int main()
         switch (menuChoice) {
         case NEW_GAME: {
             START_NEW_GAME:
+            playerShips = 10, computerShips = 10;
             mode = ShowGameModes(theme);
             switch (mode) {
             case PLAYER_VS_COMPUTER: {
